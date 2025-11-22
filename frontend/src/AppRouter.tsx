@@ -43,6 +43,9 @@ export function AppRouter() {
         {/* Finance Routes */}
         <Route element={<ProtectedRoute allowedRoles={['finance']} />}>
           <Route path="/dashboard/finance" element={<FinanceDashboard />} />
+          <Route path="/dashboard/finance/approved" element={<FinanceDashboard />} />
+          <Route path="/dashboard/finance/po" element={<FinanceDashboard />} />
+          <Route path="/dashboard/finance/documents" element={<FinanceDashboard />} />
           <Route path="/dashboard/finance/requests/:id" element={<FinanceRequestDetails />} />
           <Route path="/dashboard/finance/po/:id" element={<PurchaseOrderDetails />} />
         </Route>

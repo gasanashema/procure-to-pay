@@ -8,7 +8,9 @@ from .permissions import IsFinanceUser
 from documents.services import receipt_validation
 
 
-class FinanceViewSet(viewsets.ViewSet):
+class FinanceViewSet(viewsets.ModelViewSet):
+    queryset = PurchaseRequest.objects.filter(status='approved')
+    serializer_class = PurchaseOrderSerializer
     permission_classes = [IsAuthenticated, IsFinanceUser]
 
     @action(detail=False, methods=['get'])

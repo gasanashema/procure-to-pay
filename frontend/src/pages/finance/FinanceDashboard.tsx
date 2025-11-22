@@ -41,7 +41,7 @@ export const FinanceDashboard: React.FC = () => {
         setIsLoading(true);
 
         // Fetch approved requests for finance
-        const response = await axios.get('http://localhost:8000/api/finance/approved-requests/');
+        const response = await axios.get('http://localhost:8000/api/finance/');
         const apiRequests = response.data;
 
         // Transform data to match frontend interface
