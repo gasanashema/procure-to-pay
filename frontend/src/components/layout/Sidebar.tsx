@@ -40,6 +40,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: '/dashboard/approver/approvals',
       icon: <CheckSquareIcon className="h-5 w-5" />
     }],
+    approver_1: [{
+      name: 'Dashboard',
+      path: '/dashboard/approver',
+      icon: <HomeIcon className="h-5 w-5" />
+    }, {
+      name: 'Approvals',
+      path: '/dashboard/approver/approvals',
+      icon: <CheckSquareIcon className="h-5 w-5" />
+    }],
+    approver_2: [{
+      name: 'Dashboard',
+      path: '/dashboard/approver',
+      icon: <HomeIcon className="h-5 w-5" />
+    }, {
+      name: 'Approvals',
+      path: '/dashboard/approver/approvals',
+      icon: <CheckSquareIcon className="h-5 w-5" />
+    }],
     finance: [{
       name: 'Dashboard',
       path: '/dashboard/finance',

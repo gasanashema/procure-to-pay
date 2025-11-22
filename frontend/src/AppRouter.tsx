@@ -26,7 +26,7 @@ export function AppRouter() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         {/* Protected Routes - Profile accessible to all authenticated users */}
-        <Route element={<ProtectedRoute allowedRoles={['staff', 'approver', 'finance']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['staff', 'approver_1', 'approver_2', 'finance']} />}>
           <Route path="/profile" element={<Profile />} />
         </Route>
         {/* Staff Routes */}
@@ -36,7 +36,7 @@ export function AppRouter() {
           <Route path="/dashboard/staff/requests/:id" element={<RequestDetails />} />
         </Route>
         {/* Approver Routes */}
-        <Route element={<ProtectedRoute allowedRoles={['approver']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['approver_1', 'approver_2']} />}>
           <Route path="/dashboard/approver" element={<ApproverDashboard />} />
           <Route path="/dashboard/approver/requests/:id" element={<ApproverRequestDetails />} />
         </Route>
@@ -47,7 +47,7 @@ export function AppRouter() {
           <Route path="/dashboard/finance/po/:id" element={<PurchaseOrderDetails />} />
         </Route>
         {/* Default Routes */}
-        <Route path="/" element={isAuthenticated ? userRole === 'staff' ? <Navigate to="/dashboard/staff" /> : userRole === 'approver' ? <Navigate to="/dashboard/approver" /> : userRole === 'finance' ? <Navigate to="/dashboard/finance" /> : <Navigate to="/login" /> : <Navigate to="/login" />} />
+        <Route path="/" element={isAuthenticated ? userRole === 'staff' ? <Navigate to="/dashboard/staff" /> : (userRole === 'approver_1' || userRole === 'approver_2') ? <Navigate to="/dashboard/approver" /> : userRole === 'finance' ? <Navigate to="/dashboard/finance" /> : <Navigate to="/login" /> : <Navigate to="/login" />} />
         {/* Catch All */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

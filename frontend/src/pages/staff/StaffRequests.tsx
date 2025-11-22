@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { PlusIcon, SearchIcon, FilterIcon } from 'lucide-react';
+import axios from 'axios';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -18,6 +19,7 @@ interface RequestData {
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
   updatedAt: string;
+  index: number;
 }
 export const StaffRequests: React.FC = () => {
   const navigate = useNavigate();
@@ -27,35 +29,45 @@ export const StaffRequests: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   useEffect(() => {
-    // In a real app, this would fetch data from the API
     const fetchRequests = async () => {
       try {
         setIsLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        // Mock data
-        const mockRequests: RequestData[] = Array.from({
-          length: 10
-        }, (_, i) => ({
-          id: i + 1,
-          title: `Request ${i + 1}`,
-          description: `Description for request ${i + 1}`,
-          amount: Math.round(Math.random() * 1000 * 100) / 100,
-          status: ['pending', 'approved', 'rejected'][Math.floor(Math.random() * 3)] as 'pending' | 'approved' | 'rejected',
-          createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-          updatedAt: new Date(Date.now() - Math.random() * 15 * 24 * 60 * 60 * 1000).toISOString()
+
+        // Fetch user's requests
+        const response = await axios.get('http://localhost:8000/api/requests/');
+        const apiRequests = response.data.results || response.data;
+
+        // Transform data to match frontend interface
+        const transformedRequests: RequestData[] = apiRequests.map((req: any, index: number) => ({
+          id: req.id,
+          title: req.title,
+          description: req.description,
+          amount: parseFloat(req.amount),
+          status: req.status,
+          createdAt: req.created_at,
+          updatedAt: req.updated_at,
+          index: index + 1
         }));
-        setRequests(mockRequests);
-        setFilteredRequests(mockRequests);
+
+        setRequests(transformedRequests);
+        setFilteredRequests(transformedRequests);
       } catch (error) {
         console.error('Error fetching requests:', error);
+        // Set empty data on error
+        setRequests([]);
+        setFilteredRequests([]);
       } finally {
         setIsLoading(false);
       }
     };
     fetchRequests();
-  }, []);
+  }, [refreshKey]);
+
+  const refreshData = () => {
+    setRefreshKey(prev => prev + 1);
+  };
   useEffect(() => {
     // Apply filters
     let result = requests;
@@ -68,12 +80,12 @@ export const StaffRequests: React.FC = () => {
     setFilteredRequests(result);
   }, [requests, searchQuery, statusFilter]);
   const columns = [{
-    header: 'Request ID',
-    accessor: (row: RequestData) => `#${row.id}`,
+    header: '#',
+    accessor: (row: RequestData) => row.index.toString(),
     className: 'font-medium text-gray-900'
   }, {
     header: 'Title',
-    accessor: 'title'
+    accessor: (row: RequestData) => row.title
   }, {
     header: 'Amount',
     accessor: (row: RequestData) => `$${row.amount.toFixed(2)}`,
@@ -131,7 +143,7 @@ export const StaffRequests: React.FC = () => {
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Create New Purchase Request" size="lg">
         <CreateRequestForm onSuccess={() => {
         setIsCreateModalOpen(false);
-        // In a real app, refresh the requests list
+        refreshData(); // Refresh the requests list
       }} />
       </Modal>
     </DashboardLayout>;

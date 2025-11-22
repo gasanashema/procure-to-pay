@@ -1,0 +1,22 @@
+{
+  "name": "procure-to-pay-fullstack",
+  "version": "1.0.0",
+  "description": "Full-stack Procure-to-Pay application with Django backend and React frontend",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && python manage.py runserver 8000",
+    "dev:frontend": "cd frontend && npm run dev",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && pip install -r requirements.txt",
+    "migrate": "cd backend && python manage.py migrate",
+    "createsuperuser": "cd backend && python manage.py createsuperuser",
+    "createusers": "cd backend && python manage.py create_test_users",
+    "createdemo": "cd backend && python manage.py create_demo_data",
+    "setup": "npm run install:all && npm run migrate && npm run createusers && npm run createdemo"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": ["django", "react", "procure-to-pay", "fullstack"],
+  "author": "",
+  "license": "MIT"
+}

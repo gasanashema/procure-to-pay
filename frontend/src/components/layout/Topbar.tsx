@@ -15,6 +15,8 @@ export const Topbar: React.FC<TopbarProps> = ({
   const roleLabels = {
     staff: 'Staff',
     approver: 'Approver',
+    approver_1: 'Approver Level 1',
+    approver_2: 'Approver Level 2',
     finance: 'Finance'
   };
   return <motion.header initial={{

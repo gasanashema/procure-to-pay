@@ -39,7 +39,14 @@ export const Login: React.FC = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && userRole) {
-      const dashboardPath = userRole === 'staff' ? '/dashboard/staff' : userRole === 'approver' ? '/dashboard/approver' : userRole === 'finance' ? '/dashboard/finance' : '/login';
+      let dashboardPath = '/login';
+      if (userRole === 'staff') {
+        dashboardPath = '/dashboard/staff';
+      } else if (userRole === 'approver_1' || userRole === 'approver_2') {
+        dashboardPath = '/dashboard/approver';
+      } else if (userRole === 'finance') {
+        dashboardPath = '/dashboard/finance';
+      }
       navigate(dashboardPath, {
         replace: true
       });
@@ -117,13 +124,16 @@ export const Login: React.FC = () => {
               </div>
             </div>
             <div className="mt-4 grid grid-cols-1 gap-3">
-              <Button variant="outline" onClick={() => handleDemoLogin('staff@example.com', 'password')} disabled={isSubmitting}>
+              <Button variant="outline" onClick={() => handleDemoLogin('staff@example.com', 'staff123')} disabled={isSubmitting}>
                 Sign in as Staff
               </Button>
-              <Button variant="outline" onClick={() => handleDemoLogin('approver@example.com', 'password')} disabled={isSubmitting}>
-                Sign in as Approver
+              <Button variant="outline" onClick={() => handleDemoLogin('approver1@example.com', 'approver123')} disabled={isSubmitting}>
+                Sign in as Approver 1
               </Button>
-              <Button variant="outline" onClick={() => handleDemoLogin('finance@example.com', 'password')} disabled={isSubmitting}>
+              <Button variant="outline" onClick={() => handleDemoLogin('approver2@example.com', 'approver123')} disabled={isSubmitting}>
+                Sign in as Approver 2
+              </Button>
+              <Button variant="outline" onClick={() => handleDemoLogin('finance@example.com', 'finance123')} disabled={isSubmitting}>
                 Sign in as Finance
               </Button>
             </div>
