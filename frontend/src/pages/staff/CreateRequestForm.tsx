@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
+import axios from 'axios';
 import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
 import { Button } from '../../components/ui/Button';
@@ -52,22 +53,21 @@ export const CreateRequestForm: React.FC<CreateRequestFormProps> = ({
     }
     try {
       setIsSubmitting(true);
-      // Simulate file upload
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 10;
-        setUploadProgress(progress);
-        if (progress >= 100) {
-          clearInterval(interval);
-        }
-      }, 300);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      // In a real app, this would call an API endpoint
-      console.log('Form data:', {
-        ...data,
-        amount: parseFloat(data.amount),
-        proformaFile
+
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('title', data.title);
+      formData.append('description', data.description);
+      formData.append('amount', data.amount);
+      formData.append('proforma_file', proformaFile);
+
+      // Add items if needed (for now, basic request)
+      // TODO: Add items support
+
+      await axios.post('http://localhost:8000/api/requests/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
       showToast('Purchase request created successfully!', 'success');
       onSuccess();

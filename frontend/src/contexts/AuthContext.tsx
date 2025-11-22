@@ -1,6 +1,6 @@
 import React, { useEffect, useState, createContext, useContext } from 'react';
 import axios from 'axios';
-type UserRole = 'staff' | 'approver' | 'finance' | null;
+type UserRole = 'staff' | 'approver_1' | 'approver_2' | 'finance' | null;
 interface AuthContextType {
   isAuthenticated: boolean;
   userRole: UserRole;
@@ -29,6 +29,7 @@ export const AuthProvider: React.FC<{
   useEffect(() => {
     // Check if user is authenticated on page load
     const token = localStorage.getItem('token');
+    const refreshToken = localStorage.getItem('refreshToken');
     const storedUser = localStorage.getItem('user');
     if (token && storedUser) {
       const parsedUser = JSON.parse(storedUser);
@@ -43,51 +44,25 @@ export const AuthProvider: React.FC<{
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      // This would be a real API call in production
-      // const response = await axios.post('/api/auth/login', { email, password });
-      // Mock login for demo purposes
-      // In production, this would come from the API
-      let mockUser;
-      if (email.includes('staff')) {
-        mockUser = {
-          id: 1,
-          name: 'Staff User',
-          email,
-          role: 'staff' as const
-        };
-      } else if (email.includes('approver')) {
-        mockUser = {
-          id: 2,
-          name: 'Approver User',
-          email,
-          role: 'approver' as const
-        };
-      } else if (email.includes('finance')) {
-        mockUser = {
-          id: 3,
-          name: 'Finance User',
-          email,
-          role: 'finance' as const
-        };
-      } else {
-        // Default to staff for demo
-        mockUser = {
-          id: 4,
-          name: 'Default Staff',
-          email,
-          role: 'staff' as const
-        };
-      }
-      const mockToken = 'mock-jwt-token-' + Math.random().toString(36).substr(2);
-      // Save token and user to localStorage
-      localStorage.setItem('token', mockToken);
-      localStorage.setItem('user', JSON.stringify(mockUser));
+      const response = await axios.post('http://localhost:8000/api/auth/login/', {
+        username: email, // Backend expects username, but we use email for login
+        password,
+      });
+
+      const { access, refresh, user } = response.data;
+
+      // Save tokens and user to localStorage
+      localStorage.setItem('token', access);
+      localStorage.setItem('refreshToken', refresh);
+      localStorage.setItem('user', JSON.stringify(user));
+
       // Set auth state
       setIsAuthenticated(true);
-      setUserRole(mockUser.role);
-      setUser(mockUser);
+      setUserRole(user.role);
+      setUser(user);
+
       // Set axios default header
-      axios.defaults.headers.common['Authorization'] = `Bearer ${mockToken}`;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access}`;
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -96,8 +71,9 @@ export const AuthProvider: React.FC<{
     }
   };
   const logout = () => {
-    // Remove token and user from localStorage
+    // Remove token, refresh token and user from localStorage
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     // Reset auth state
     setIsAuthenticated(false);

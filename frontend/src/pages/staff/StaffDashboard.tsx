@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { PlusIcon, FileTextIcon, ClockIcon, CheckIcon, XIcon } from 'lucide-react';
+import axios from 'axios';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -17,6 +18,7 @@ interface RequestData {
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
   updatedAt: string;
+  index: number;
 }
 export const StaffDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -29,57 +31,68 @@ export const StaffDashboard: React.FC = () => {
     rejected: 0
   });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   useEffect(() => {
-    // In a real app, this would fetch data from the API
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        // Mock data
-        const mockRequests: RequestData[] = [{
-          id: 1,
-          title: 'Office Supplies',
-          description: 'Notebooks, pens, and staplers for the team',
-          amount: 125.5,
-          status: 'approved',
-          createdAt: '2023-05-15T10:30:00Z',
-          updatedAt: '2023-05-16T14:20:00Z'
-        }, {
-          id: 2,
-          title: 'Software Subscription',
-          description: 'Annual subscription for design software',
-          amount: 599.99,
-          status: 'pending',
-          createdAt: '2023-05-18T09:15:00Z',
-          updatedAt: '2023-05-18T09:15:00Z'
-        }, {
-          id: 3,
-          title: 'Conference Tickets',
-          description: 'Tickets for the annual industry conference',
-          amount: 850.0,
-          status: 'rejected',
-          createdAt: '2023-05-10T16:45:00Z',
-          updatedAt: '2023-05-12T11:30:00Z'
-        }];
-        setRecentRequests(mockRequests);
+
+        // Fetch user's requests
+        const response = await axios.get('http://localhost:8000/api/requests/');
+        const requests = response.data.results || response.data;
+
+        // Transform data to match frontend interface
+        const transformedRequests: RequestData[] = requests.slice(0, 5).map((req: any, index: number) => ({
+          id: req.id,
+          title: req.title,
+          description: req.description,
+          amount: parseFloat(req.amount),
+          status: req.status,
+          createdAt: req.created_at,
+          updatedAt: req.updated_at,
+          index: index + 1
+        }));
+
+        // Calculate stats
+        const total = requests.length;
+        const pending = requests.filter((req: any) => req.status === 'pending').length;
+        const approved = requests.filter((req: any) => req.status === 'approved').length;
+        const rejected = requests.filter((req: any) => req.status === 'rejected').length;
+
+        setRecentRequests(transformedRequests);
         setStats({
-          total: 12,
-          pending: 5,
-          approved: 6,
-          rejected: 1
+          total,
+          pending,
+          approved,
+          rejected
         });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        // Set empty data on error
+        setRecentRequests([]);
+        setStats({
+          total: 0,
+          pending: 0,
+          approved: 0,
+          rejected: 0
+        });
       } finally {
         setIsLoading(false);
       }
     };
     fetchDashboardData();
-  }, []);
+  }, [refreshKey]);
+
+  const refreshData = () => {
+    setRefreshKey(prev => prev + 1);
+  };
   const columns = [{
+    header: '#',
+    accessor: (row: RequestData) => row.index.toString(),
+    className: 'font-medium text-gray-900'
+  }, {
     header: 'Title',
-    accessor: 'title'
+    accessor: (row: RequestData) => row.title
   }, {
     header: 'Amount',
     accessor: (row: RequestData) => `$${row.amount.toFixed(2)}`,
@@ -185,7 +198,7 @@ export const StaffDashboard: React.FC = () => {
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Create New Purchase Request" size="lg">
         <CreateRequestForm onSuccess={() => {
         setIsCreateModalOpen(false);
-        // In a real app, refresh the requests list
+        refreshData(); // Refresh the dashboard data
       }} />
       </Modal>
     </DashboardLayout>;

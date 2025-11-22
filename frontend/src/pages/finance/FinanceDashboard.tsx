@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckIcon, FileTextIcon, DollarSignIcon, TrendingUpIcon, SearchIcon, FilterIcon } from 'lucide-react';
+import axios from 'axios';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -32,33 +33,39 @@ export const FinanceDashboard: React.FC = () => {
     totalAmount: 0,
     pendingReceipts: 0
   });
+  const [refreshKey, setRefreshKey] = useState(0);
+
   useEffect(() => {
-    // In a real app, this would fetch data from the API
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        // Mock data
-        const mockRequests: RequestData[] = Array.from({
-          length: 8
-        }, (_, i) => ({
-          id: i + 1,
-          title: `Purchase Request ${i + 1}`,
-          requestor: `Employee ${i + 1}`,
-          amount: Math.round(Math.random() * 5000 * 100) / 100,
-          status: Math.random() > 0.5 ? 'approved' : 'processed',
-          poNumber: Math.random() > 0.3 ? `PO-2023-${1000 + i}` : undefined,
-          createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-          updatedAt: new Date(Date.now() - Math.random() * 15 * 24 * 60 * 60 * 1000).toISOString(),
-          hasReceipt: Math.random() > 0.5
+
+        // Fetch approved requests for finance
+        const response = await axios.get('http://localhost:8000/api/finance/approved-requests/');
+        const apiRequests = response.data;
+
+        // Transform data to match frontend interface
+        const transformedRequests: RequestData[] = apiRequests.map((req: any, index: number) => ({
+          id: req.id,
+          title: req.title,
+          requestor: req.created_by_name || 'Unknown',
+          amount: parseFloat(req.amount),
+          status: req.status === 'approved' ? 'approved' : 'processed', // Map backend status
+          poNumber: req.purchase_order_file ? `PO-${req.id}` : undefined, // Generate PO number if file exists
+          createdAt: req.created_at,
+          updatedAt: req.updated_at,
+          hasReceipt: !!req.receipt_file // Check if receipt exists
         }));
-        setApprovedRequests(mockRequests);
-        setFilteredRequests(mockRequests);
-        const totalAmount = mockRequests.reduce((sum, req) => sum + req.amount, 0);
-        const approvedCount = mockRequests.filter(req => req.status === 'approved').length;
-        const processedCount = mockRequests.filter(req => req.status === 'processed').length;
-        const pendingReceiptsCount = mockRequests.filter(req => !req.hasReceipt).length;
+
+        setApprovedRequests(transformedRequests);
+        setFilteredRequests(transformedRequests);
+
+        // Calculate stats
+        const totalAmount = transformedRequests.reduce((sum, req) => sum + req.amount, 0);
+        const approvedCount = transformedRequests.filter(req => req.status === 'approved').length;
+        const processedCount = transformedRequests.filter(req => req.status === 'processed').length;
+        const pendingReceiptsCount = transformedRequests.filter(req => !req.hasReceipt).length;
+
         setStats({
           approved: approvedCount,
           processed: processedCount,
@@ -67,12 +74,25 @@ export const FinanceDashboard: React.FC = () => {
         });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        // Set empty data on error
+        setApprovedRequests([]);
+        setFilteredRequests([]);
+        setStats({
+          approved: 0,
+          processed: 0,
+          totalAmount: 0,
+          pendingReceipts: 0
+        });
       } finally {
         setIsLoading(false);
       }
     };
     fetchDashboardData();
-  }, []);
+  }, [refreshKey]);
+
+  const refreshData = () => {
+    setRefreshKey(prev => prev + 1);
+  };
   useEffect(() => {
     // Apply filters
     let result = approvedRequests;
@@ -90,10 +110,10 @@ export const FinanceDashboard: React.FC = () => {
     className: 'font-medium text-gray-900'
   }, {
     header: 'Title',
-    accessor: 'title'
+    accessor: (row: RequestData) => row.title
   }, {
     header: 'Requestor',
-    accessor: 'requestor'
+    accessor: (row: RequestData) => row.requestor
   }, {
     header: 'Amount',
     accessor: (row: RequestData) => `$${row.amount.toFixed(2)}`,

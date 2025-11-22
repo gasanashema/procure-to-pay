@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ClockIcon, CheckIcon, XIcon, SearchIcon, FilterIcon, AlertCircleIcon } from 'lucide-react';
+import axios from 'axios';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -17,6 +18,7 @@ interface RequestData {
   urgency: 'low' | 'normal' | 'high' | 'critical';
   createdAt: string;
   updatedAt: string;
+  index: number;
 }
 export const ApproverDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -31,29 +33,38 @@ export const ApproverDashboard: React.FC = () => {
     rejected: 0,
     urgent: 0
   });
+  const [refreshKey, setRefreshKey] = useState(0);
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const mockRequests: RequestData[] = Array.from({
-          length: 12
-        }, (_, i) => ({
-          id: i + 1,
-          title: `Purchase Request ${i + 1}`,
-          requestor: `Employee ${i + 1}`,
-          amount: Math.round(Math.random() * 5000 * 100) / 100,
-          status: ['pending', 'approved', 'rejected'][Math.floor(Math.random() * 3)] as 'pending' | 'approved' | 'rejected',
-          urgency: ['low', 'normal', 'high', 'critical'][Math.floor(Math.random() * 4)] as 'low' | 'normal' | 'high' | 'critical',
-          createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-          updatedAt: new Date(Date.now() - Math.random() * 15 * 24 * 60 * 60 * 1000).toISOString()
+
+        // Fetch pending approvals for this approver
+        const response = await axios.get('http://localhost:8000/api/approvals/pending/');
+        const apiRequests = response.data;
+
+        // Transform data to match frontend interface
+        const transformedRequests: RequestData[] = apiRequests.map((req: any, index: number) => ({
+          id: req.id,
+          title: req.title,
+          requestor: req.created_by_name || 'Unknown',
+          amount: parseFloat(req.amount),
+          status: req.status,
+          urgency: 'normal', // Default urgency since backend doesn't have this field
+          createdAt: req.created_at,
+          updatedAt: req.updated_at,
+          index: index + 1
         }));
-        setRequests(mockRequests);
-        setFilteredRequests(mockRequests.filter(req => req.status === 'pending'));
-        const pendingCount = mockRequests.filter(req => req.status === 'pending').length;
-        const approvedCount = mockRequests.filter(req => req.status === 'approved').length;
-        const rejectedCount = mockRequests.filter(req => req.status === 'rejected').length;
-        const urgentCount = mockRequests.filter(req => req.status === 'pending' && (req.urgency === 'high' || req.urgency === 'critical')).length;
+
+        setRequests(transformedRequests);
+        setFilteredRequests(transformedRequests);
+
+        // Calculate stats
+        const pendingCount = transformedRequests.length;
+        const approvedCount = 0; // This dashboard only shows pending requests
+        const rejectedCount = 0;
+        const urgentCount = 0; // Could be calculated based on amount thresholds
+
         setStats({
           pending: pendingCount,
           approved: approvedCount,
@@ -62,12 +73,25 @@ export const ApproverDashboard: React.FC = () => {
         });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        // Set empty data on error
+        setRequests([]);
+        setFilteredRequests([]);
+        setStats({
+          pending: 0,
+          approved: 0,
+          rejected: 0,
+          urgent: 0
+        });
       } finally {
         setIsLoading(false);
       }
     };
     fetchDashboardData();
-  }, []);
+  }, [refreshKey]);
+
+  const refreshData = () => {
+    setRefreshKey(prev => prev + 1);
+  };
   useEffect(() => {
     let result = requests;
     if (searchQuery) {
@@ -85,15 +109,15 @@ export const ApproverDashboard: React.FC = () => {
     critical: 'bg-red-100 text-red-800'
   };
   const columns = [{
-    header: 'Request ID',
-    accessor: (row: RequestData) => `#${row.id}`,
+    header: '#',
+    accessor: (row: RequestData) => row.index.toString(),
     className: 'font-medium text-gray-900'
   }, {
     header: 'Title',
-    accessor: 'title'
+    accessor: (row: RequestData) => row.title
   }, {
     header: 'Requestor',
-    accessor: 'requestor'
+    accessor: (row: RequestData) => row.requestor
   }, {
     header: 'Amount',
     accessor: (row: RequestData) => `$${row.amount.toFixed(2)}`,

@@ -23,7 +23,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Redirect to appropriate dashboard based on role
     if (userRole === 'staff') {
       return <Navigate to="/dashboard/staff" />;
-    } else if (userRole === 'approver') {
+    } else if (userRole === 'approver_1' || userRole === 'approver_2') {
       return <Navigate to="/dashboard/approver" />;
     } else if (userRole === 'finance') {
       return <Navigate to="/dashboard/finance" />;
